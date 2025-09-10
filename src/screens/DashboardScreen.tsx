@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import {
   Montserrat_400Regular,
   Montserrat_500Medium,
@@ -18,17 +18,12 @@ import {
   useFonts,
 } from "@expo-google-fonts/montserrat";
 
-interface DashboardScreenProps {
-  route?: any;
-}
-
-const DashboardScreen: React.FC<DashboardScreenProps> = ({
-  route,
-}) => {
+const DashboardScreen: React.FC = () => {
   const navigation = useNavigation();
+  const route = useRoute();
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(50));
-  const [userName, setUserName] = useState("Usuário");
+  const userName = route.params?.userName || 'Usuário';
 
   const [fontsLoaded] = useFonts({
     Montserrat_400Regular,
@@ -36,6 +31,14 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
     Montserrat_600SemiBold,
     Montserrat_700Bold,
   });
+
+  const navigateToNovoRDC = () => {
+    navigation.navigate("NovoRDC", { userName });
+  };
+
+  const navigateToListaRDC = () => {
+    navigation.navigate("ListaRDC", { userName });
+  };
 
   useEffect(() => {
     Animated.parallel([
@@ -50,19 +53,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
         useNativeDriver: true,
       }),
     ]).start();
-
-    if (route?.params?.userName) {
-      setUserName(route.params.userName);
-    }
-  }, [route?.params]);
-
-  const navigateToNovoRDC = () => {
-    navigation.navigate("NovoRDC", { userName });
-  };
-
-  const navigateToListaRDC = () => {
-    navigation.navigate("ListaRDC", { userName });
-  };
+  }, []);
 
   if (!fontsLoaded) {
     return (
@@ -73,115 +64,117 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
   }
 
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        {
-          opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }],
-        },
-      ]}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.dashboardContent}>
-          <Text style={styles.welcomeTitle}>Bem-vindo, {userName}!</Text>
-          <Text style={styles.sectionTitle}>Resumo do Projeto</Text>
+    <View style={styles.container}>
+      <Animated.View
+        style={[
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+            flex: 1,
+          },
+        ]}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.dashboardContent}>
+            <Text style={styles.welcomeTitle}>Bem-vindo, {userName}!</Text>
+            <Text style={styles.sectionTitle}>Resumo do Projeto</Text>
 
-          <Animated.View
-            style={[
-              styles.card,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-              },
-            ]}
-          >
-            <Text style={styles.cardTitle}>Projetos Ativos</Text>
-            <Text style={styles.cardValue}>3</Text>
-            <Text style={styles.cardSubtitle}>Em andamento</Text>
-          </Animated.View>
-
-          <Animated.View
-            style={[
-              styles.card,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-                marginTop: 15,
-              },
-            ]}
-          >
-            <Text style={styles.cardTitle}>Tarefas Pendentes</Text>
-            <Text style={styles.cardValue}>12</Text>
-            <Text style={styles.cardSubtitle}>Para esta semana</Text>
-          </Animated.View>
-
-          <Animated.View
-            style={[
-              styles.card,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-                marginTop: 30,
-              },
-            ]}
-          >
-            <Text style={styles.cardTitle}>Orçamento Total</Text>
-            <Text style={styles.cardValue}>R$ 45.680,00</Text>
-            <Text style={styles.cardSubtitle}>Utilizado: R$ 28.450,00</Text>
-          </Animated.View>
-
-          <Animated.View
-            style={[
-              styles.card,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-                marginTop: 45,
-              },
-            ]}
-          >
-            <Text style={styles.cardTitle}>Próximos Vencimentos</Text>
-            <Text style={styles.cardValue}>5 dias</Text>
-            <Text style={styles.cardSubtitle}>Para entregas</Text>
-          </Animated.View>
-
-          <Text style={[styles.sectionTitle, { marginTop: 40 }]}>Ações Rápidas</Text>
-
-          <View style={styles.quickActions}>
-            <TouchableOpacity 
-              style={styles.quickActionCard}
-              onPress={navigateToNovoRDC}
+            <Animated.View
+              style={[
+                styles.card,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }],
+                },
+              ]}
             >
-              <Text style={styles.quickActionIcon}>📊</Text>
-              <Text style={styles.quickActionText}>Novo RDC</Text>
-            </TouchableOpacity>
+              <Text style={styles.cardTitle}>Projetos Ativos</Text>
+              <Text style={styles.cardValue}>3</Text>
+              <Text style={styles.cardSubtitle}>Em andamento</Text>
+            </Animated.View>
 
-            <TouchableOpacity 
-              style={styles.quickActionCard}
-              onPress={navigateToListaRDC}
+            <Animated.View
+              style={[
+                styles.card,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }],
+                  marginTop: 15,
+                },
+              ]}
             >
-              <Text style={styles.quickActionIcon}>📋</Text>
-              <Text style={styles.quickActionText}>Ver RDCs</Text>
-            </TouchableOpacity>
+              <Text style={styles.cardTitle}>Tarefas Pendentes</Text>
+              <Text style={styles.cardValue}>12</Text>
+              <Text style={styles.cardSubtitle}>Para esta semana</Text>
+            </Animated.View>
 
-            <TouchableOpacity 
-              style={styles.quickActionCard}
-              onPress={() => {}}
+            <Animated.View
+              style={[
+                styles.card,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }],
+                  marginTop: 30,
+                },
+              ]}
             >
-              <Text style={styles.quickActionIcon}>👥</Text>
-              <Text style={styles.quickActionText}>Equipe</Text>
-            </TouchableOpacity>
+              <Text style={styles.cardTitle}>Orçamento Total</Text>
+              <Text style={styles.cardValue}>R$ 45.680,00</Text>
+              <Text style={styles.cardSubtitle}>Utilizado: R$ 28.450,00</Text>
+            </Animated.View>
+
+            <Animated.View
+              style={[
+                styles.card,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }],
+                  marginTop: 45,
+                },
+              ]}
+            >
+              <Text style={styles.cardTitle}>Próximos Vencimentos</Text>
+              <Text style={styles.cardValue}>5 dias</Text>
+              <Text style={styles.cardSubtitle}>Para entregas</Text>
+            </Animated.View>
+
+            <Text style={[styles.sectionTitle, { marginTop: 40 }]}>Ações Rápidas</Text>
+
+            <View style={styles.quickActions}>
+              <TouchableOpacity 
+                style={styles.quickActionCard}
+                onPress={navigateToNovoRDC}
+              >
+                <Text style={styles.quickActionIcon}>📊</Text>
+                <Text style={styles.quickActionText}>Novo RDC</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.quickActionCard}
+                onPress={navigateToListaRDC}
+              >
+                <Text style={styles.quickActionIcon}>📋</Text>
+                <Text style={styles.quickActionText}>Ver RDCs</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.quickActionCard}
+                onPress={() => {}}
+              >
+                <Text style={styles.quickActionIcon}>👥</Text>
+                <Text style={styles.quickActionText}>Equipe</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
 
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          © 2024 ConstruLog. Todos os direitos reservados.
-        </Text>
-      </View>
-    </Animated.View>
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            © 2024 ConstruLog. Todos os direitos reservados.
+          </Text>
+        </View>
+      </Animated.View>
+    </View>
   );
 };
 
@@ -196,7 +189,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 20,
     paddingBottom: 40,
-    paddingTop: 10, // Ajuste para compensar o header do drawer
+    paddingTop: 10,
   },
   dashboardContent: {
     flex: 1,

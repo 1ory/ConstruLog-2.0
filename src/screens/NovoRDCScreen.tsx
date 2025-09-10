@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
-  StatusBar,
   TouchableOpacity,
   TextInput,
   Platform,
@@ -13,17 +11,14 @@ import {
   Alert,
   CheckBox
 } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import CustomHeader from '../components/CustomHeader';
 import ThemedText from '../components/ThemedText';
 
-interface NovoRDCScreenProps {
-  navigation: any;
-  route: any;
-}
-
-const NovoRDCScreen: React.FC<NovoRDCScreenProps> = ({ navigation, route }) => {
+const NovoRDCScreen = () => {
+  const navigation = useNavigation();
+  const route = useRoute();
   const userName = route.params?.userName || 'Usuário';
   
   // Estados para os dados do formulário
@@ -36,7 +31,12 @@ const NovoRDCScreen: React.FC<NovoRDCScreenProps> = ({ navigation, route }) => {
   const [efetivo, setEfetivo] = useState<string[]>([]);
   const [outrosEfetivo, setOutrosEfetivo] = useState('');
   const [ocorrencias, setOcorrencias] = useState<Array<{tipo: string, observacao: string}>>([]);
-  const [tempo, setTempo] = useState<number[]>([]);
+  const [horaInicial, setHoraInicial] = useState('');
+  const [horaFinal, setHoraFinal] = useState('');
+  const [showTimePickerInicial, setShowTimePickerInicial] = useState(false);
+  const [showTimePickerFinal, setShowTimePickerFinal] = useState(false);
+  const [tempTime, setTempTime] = useState(new Date());
+  const [timeField, setTimeField] = useState<'inicial' | 'final'>('inicial');
   const [efetividade, setEfetividade] = useState<Record<string, {inicio: string, fim: string}>>({});
 
   // Estados para modais e seleções
@@ -91,13 +91,30 @@ const NovoRDCScreen: React.FC<NovoRDCScreenProps> = ({ navigation, route }) => {
       efetivo,
       outrosEfetivo: efetivo.includes('Outros') ? outrosEfetivo : '',
       ocorrencias,
-      tempo,
+      tempo: {
+        horaInicial,
+        horaFinal,
+        totalHoras: calcularTotalHoras(horaInicial, horaFinal)
+      },
       efetividade,
     };
 
     console.log('Dados do RDC:', rdcData);
     Alert.alert('Sucesso', 'RDC salvo com sucesso!');
     navigation.goBack();
+  };
+
+  const calcularTotalHoras = (inicio: string, fim: string) => {
+    if (!inicio || !fim) return '0';
+    
+    const [hInicio, mInicio] = inicio.split(':').map(Number);
+    const [hFim, mFim] = fim.split(':').map(Number);
+    
+    const totalMinutos = (hFim * 60 + mFim) - (hInicio * 60 + mInicio);
+    const horas = Math.floor(totalMinutos / 60);
+    const minutos = totalMinutos % 60;
+    
+    return `${horas}:${minutos.toString().padStart(2, '0')}`;
   };
 
   const toggleEfetivo = (nome: string) => {
@@ -134,29 +151,51 @@ const NovoRDCScreen: React.FC<NovoRDCScreenProps> = ({ navigation, route }) => {
     setOcorrencias(novasOcorrencias);
   };
 
-  const toggleTempo = (valor: number) => {
-    if (tempo.includes(valor)) {
-      setTempo(tempo.filter(item => item !== valor));
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      setDate(selectedDate);
+    }
+  };
+
+  const handleTimeChange = (event: any, selectedTime?: Date) => {
+    if (timeField === 'inicial') {
+      setShowTimePickerInicial(Platform.OS === 'ios');
     } else {
-      setTempo([...tempo, valor]);
+      setShowTimePickerFinal(Platform.OS === 'ios');
+    }
+
+    if (selectedTime) {
+      const horas = selectedTime.getHours().toString().padStart(2, '0');
+      const minutos = selectedTime.getMinutes().toString().padStart(2, '0');
+      const horaFormatada = `${horas}:${minutos}`;
+      
+      if (timeField === 'inicial') {
+        setHoraInicial(horaFormatada);
+      } else {
+        setHoraFinal(horaFormatada);
+      }
+    }
+  };
+
+  const openTimePicker = (field: 'inicial' | 'final') => {
+    setTimeField(field);
+    setTempTime(new Date());
+    if (field === 'inicial') {
+      setShowTimePickerInicial(true);
+    } else {
+      setShowTimePickerFinal(true);
     }
   };
 
   const updateEfetividade = (etapa: string, campo: 'inicio' | 'fim', valor: string) => {
-    setEfetivity({
+    setEfetividade({
       ...efetividade,
       [etapa]: {
         ...(efetividade[etapa] || { inicio: '', fim: '' }),
         [campo]: valor
       }
     });
-  };
-
-  const handleDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(false);
-    if (selectedDate) {
-      setDate(selectedDate);
-    }
   };
 
   const renderItem = ({ item }: { item: string }) => (
@@ -206,15 +245,6 @@ const NovoRDCScreen: React.FC<NovoRDCScreenProps> = ({ navigation, route }) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor="#0a0a0a" barStyle="light-content" />
-      
-      <CustomHeader 
-        title="Novo RDC" 
-        userName={userName}
-        showBackButton={true}
-        onLogout={() => navigation.goBack()}
-      />
-
       <ScrollView contentContainerStyle={styles.content}>
         {/* Data */}
         <ThemedText style={styles.label} weight="medium">Data *</ThemedText>
@@ -312,19 +342,44 @@ const NovoRDCScreen: React.FC<NovoRDCScreenProps> = ({ navigation, route }) => {
           <ThemedText style={styles.addButtonText} weight="medium">Adicionar Ocorrência</ThemedText>
         </TouchableOpacity>
 
-        {/* Tempo */}
-        <ThemedText style={styles.label} weight="medium">Tempo (horas)</ThemedText>
+        {/* Tempo - Agora com seleção de hora inicial e final */}
+        <ThemedText style={styles.label} weight="medium">Tempo de Trabalho</ThemedText>
+        
         <View style={styles.tempoContainer}>
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((hora) => (
-            <TouchableOpacity
-              key={hora}
-              style={[styles.tempoOption, tempo.includes(hora) && styles.tempoSelected]}
-              onPress={() => toggleTempo(hora)}
+          <View style={styles.horaInputContainer}>
+            <ThemedText style={styles.horaLabel}>Hora Inicial</ThemedText>
+            <TouchableOpacity 
+              style={styles.horaInput}
+              onPress={() => openTimePicker('inicial')}
             >
-              <ThemedText style={tempo.includes(hora) ? styles.tempoSelectedText : styles.tempoText}>{hora}</ThemedText>
+              <ThemedText style={horaInicial ? styles.inputText : styles.placeholderText}>
+                {horaInicial || '00:00'}
+              </ThemedText>
+              <Ionicons name="time" size={20} color="#6b7280" />
             </TouchableOpacity>
-          ))}
+          </View>
+
+          <View style={styles.horaInputContainer}>
+            <ThemedText style={styles.horaLabel}>Hora Final</ThemedText>
+            <TouchableOpacity 
+              style={styles.horaInput}
+              onPress={() => openTimePicker('final')}
+            >
+              <ThemedText style={horaFinal ? styles.inputText : styles.placeholderText}>
+                {horaFinal || '00:00'}
+              </ThemedText>
+              <Ionicons name="time" size={20} color="#6b7280" />
+            </TouchableOpacity>
+          </View>
         </View>
+
+        {horaInicial && horaFinal && (
+          <View style={styles.totalHorasContainer}>
+            <ThemedText style={styles.totalHorasText}>
+              Total: {calcularTotalHoras(horaInicial, horaFinal)} horas
+            </ThemedText>
+          </View>
+        )}
 
         {/* Efetividade */}
         <ThemedText style={styles.label} weight="medium">Efetividade</ThemedText>
@@ -332,23 +387,27 @@ const NovoRDCScreen: React.FC<NovoRDCScreenProps> = ({ navigation, route }) => {
           <View key={etapa} style={styles.etapaContainer}>
             <ThemedText style={styles.etapaText}>{etapa}</ThemedText>
             <View style={styles.horariosContainer}>
-              <TextInput
-                style={styles.horarioInput}
-                placeholder="00:00"
-                placeholderTextColor="#6b7280"
-                value={efetividade[etapa]?.inicio || ''}
-                onChangeText={(text) => updateEfetividade(etapa, 'inicio', text)}
-                keyboardType="numeric"
-              />
+              <View style={styles.horarioInput}>
+                <TextInput
+                  style={styles.horarioInputText}
+                  placeholder="00:00"
+                  placeholderTextColor="#6b7280"
+                  value={efetividade[etapa]?.inicio || ''}
+                  onChangeText={(text) => updateEfetividade(etapa, 'inicio', text)}
+                  keyboardType="numeric"
+                />
+              </View>
               <ThemedText style={styles.horarioSeparator}>-</ThemedText>
-              <TextInput
-                style={styles.horarioInput}
-                placeholder="00:00"
-                placeholderTextColor="#6b7280"
-                value={efetividade[etapa]?.fim || ''}
-                onChangeText={(text) => updateEfetividade(etapa, 'fim', text)}
-                keyboardType="numeric"
-              />
+              <View style={styles.horarioInput}>
+                <TextInput
+                  style={styles.horarioInputText}
+                  placeholder="00:00"
+                  placeholderTextColor="#6b7280"
+                  value={efetividade[etapa]?.fim || ''}
+                  onChangeText={(text) => updateEfetividade(etapa, 'fim', text)}
+                  keyboardType="numeric"
+                />
+              </View>
             </View>
           </View>
         ))}
@@ -359,13 +418,33 @@ const NovoRDCScreen: React.FC<NovoRDCScreenProps> = ({ navigation, route }) => {
         </TouchableOpacity>
       </ScrollView>
 
-      {/* DateTimePicker */}
+      {/* DateTimePicker para Data */}
       {showDatePicker && (
         <DateTimePicker
           value={date}
           mode="date"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
           onChange={handleDateChange}
+        />
+      )}
+
+      {/* DateTimePicker para Hora Inicial */}
+      {showTimePickerInicial && (
+        <DateTimePicker
+          value={tempTime}
+          mode="time"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={handleTimeChange}
+        />
+      )}
+
+      {/* DateTimePicker para Hora Final */}
+      {showTimePickerFinal && (
+        <DateTimePicker
+          value={tempTime}
+          mode="time"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={handleTimeChange}
         />
       )}
 
@@ -486,6 +565,8 @@ const styles = StyleSheet.create({
   label: {
     marginBottom: 8,
     marginTop: 10,
+    color: '#ededed',
+    fontFamily: 'Montserrat_500Medium',
   },
   input: {
     backgroundColor: '#1a1a1a',
@@ -500,10 +581,13 @@ const styles = StyleSheet.create({
   },
   inputText: {
     fontSize: 16,
+    color: '#ededed',
+    fontFamily: 'Montserrat_400Regular',
   },
   placeholderText: {
     fontSize: 16,
     color: '#6b7280',
+    fontFamily: 'Montserrat_400Regular',
   },
   textArea: {
     height: 100,
@@ -527,9 +611,11 @@ const styles = StyleSheet.create({
   },
   programadaText: {
     color: '#ededed',
+    fontFamily: 'Montserrat_400Regular',
   },
   programadaSelectedText: {
     color: '#ffffff',
+    fontFamily: 'Montserrat_600SemiBold',
   },
   addButton: {
     flexDirection: 'row',
@@ -545,6 +631,7 @@ const styles = StyleSheet.create({
   addButtonText: {
     color: '#ff6600',
     marginLeft: 10,
+    fontFamily: 'Montserrat_500Medium',
   },
   ocorrenciaItem: {
     backgroundColor: '#1a1a1a',
@@ -563,37 +650,50 @@ const styles = StyleSheet.create({
   ocorrenciaTipo: {
     color: '#ff6600',
     fontSize: 16,
+    fontFamily: 'Montserrat_600SemiBold',
   },
   ocorrenciaObs: {
     color: '#ededed',
+    fontFamily: 'Montserrat_400Regular',
   },
   tempoContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'space-between',
     marginBottom: 15,
   },
-  tempoOption: {
-    width: '18%',
-    aspectRatio: 1,
+  horaInputContainer: {
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  horaLabel: {
+    fontSize: 14,
+    color: '#a1a1aa',
+    marginBottom: 5,
+    fontFamily: 'Montserrat_500Medium',
+  },
+  horaInput: {
     backgroundColor: '#1a1a1a',
-    borderRadius: 8,
+    borderRadius: 10,
+    padding: 15,
     borderWidth: 1,
     borderColor: '#2a2a2a',
-    justifyContent: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
   },
-  tempoSelected: {
-    backgroundColor: '#ff6600',
+  totalHorasContainer: {
+    backgroundColor: '#1a1a1a',
+    padding: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 15,
+    borderWidth: 1,
     borderColor: '#ff6600',
   },
-  tempoText: {
+  totalHorasText: {
+    color: '#ff6600',
     fontWeight: 'bold',
-  },
-  tempoSelectedText: {
-    color: '#ffffff',
-    fontWeight: 'bold',
+    fontFamily: 'Montserrat_600SemiBold',
   },
   etapaContainer: {
     flexDirection: 'row',
@@ -603,10 +703,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
   },
   etapaText: {
     flex: 1,
     fontSize: 12,
+    color: '#a1a1aa',
+    fontFamily: 'Montserrat_400Regular',
   },
   horariosContainer: {
     flexDirection: 'row',
@@ -614,14 +718,23 @@ const styles = StyleSheet.create({
   },
   horarioInput: {
     backgroundColor: '#2a2a2a',
-    color: '#ededed',
     borderRadius: 5,
     padding: 5,
     width: 60,
+    height: 30,
+    justifyContent: 'center',
+  },
+  horarioInputText: {
+    color: '#ededed',
     textAlign: 'center',
+    fontSize: 12,
+    fontFamily: 'Montserrat_400Regular',
+    padding: 0,
+    margin: 0,
   },
   horarioSeparator: {
     marginHorizontal: 5,
+    color: '#a1a1aa',
   },
   saveButton: {
     backgroundColor: '#ff6600',
@@ -633,6 +746,7 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#ffffff',
     fontSize: 16,
+    fontFamily: 'Montserrat_600SemiBold',
   },
   modalContainer: {
     flex: 1,
@@ -651,6 +765,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginBottom: 15,
     textAlign: 'center',
+    color: '#ff6600',
   },
   modalItem: {
     padding: 15,
@@ -659,6 +774,7 @@ const styles = StyleSheet.create({
   },
   modalItemText: {
     fontSize: 16,
+    color: '#ededed',
   },
   modalCloseButton: {
     padding: 15,
@@ -669,6 +785,7 @@ const styles = StyleSheet.create({
   },
   modalCloseText: {
     color: '#ffffff',
+    fontFamily: 'Montserrat_500Medium',
   },
   modalList: {
     maxHeight: 200,
@@ -694,6 +811,7 @@ const styles = StyleSheet.create({
   },
   modalButtonText: {
     color: '#ffffff',
+    fontFamily: 'Montserrat_500Medium',
   },
   efetivoItem: {
     flexDirection: 'row',
@@ -705,6 +823,8 @@ const styles = StyleSheet.create({
   efetivoText: {
     fontSize: 16,
     marginLeft: 10,
+    color: '#ededed',
+    fontFamily: 'Montserrat_400Regular',
   },
 });
 

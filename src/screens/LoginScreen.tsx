@@ -8,18 +8,18 @@ import {
   Platform,
   ScrollView,
   Dimensions,
-  Image,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Image
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import ThemedText from "../components/ThemedText";
+import { useAuth } from "../contexts/AuthContext";
 
-interface LoginScreenProps {
-  onLogin: (userName?: string) => void;
-  navigation?: any;
-}
-
-const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, navigation }) => {
+const LoginScreen: React.FC = () => {
+  const navigation = useNavigation();
+  const { login } = useAuth();
+  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isFocusedEmail, setIsFocusedEmail] = useState(false);
@@ -34,16 +34,16 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, navigation }) => {
 
     setIsLoading(true);
 
-    // Simulação de login enquanto implementamos o banco
-    setTimeout(() => {
+    try {
       const userName = email.split("@")[0];
+      await login(userName);
+      navigation.navigate("Dashboard");
+    } catch (error) {
+      console.error("Erro no login:", error);
+      Alert.alert("Erro", "Falha no login. Tente novamente.");
+    } finally {
       setIsLoading(false);
-      onLogin(userName);
-      
-      if (navigation) {
-        navigation.navigate("Main");
-      }
-    }, 1500);
+    }
   };
 
   return (
@@ -67,11 +67,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, navigation }) => {
 
           <View style={styles.header}>
             <View style={styles.logoContainer}>
-              <View style={styles.logoPlaceholder}>
-                <ThemedText weight="bold" style={styles.logoText}>
-                  CONSTRULOG
-                </ThemedText>
-              </View>
+              <Image
+                source={require("../../assets/images/logo.png")}
+                style={styles.logo}
+                resizeMode="contain"
+              />
             </View>
             <ThemedText style={styles.subtitle}>Acesse sua conta</ThemedText>
           </View>
@@ -195,21 +195,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  logoPlaceholder: {
-    height: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
-    paddingHorizontal: 24,
-  },
-  logoText: {
-    fontSize: 24,
-    color: '#ff6600',
+  logo: {
+    width: 200,
+    height: 80,
   },
   subtitle: {
     fontSize: 16,
     color: '#a1a1aa',
+    marginTop: 10,
   },
   formContainer: {
     width: '100%',

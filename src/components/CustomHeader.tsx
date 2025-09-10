@@ -15,19 +15,22 @@ interface CustomHeaderProps {
   userName?: string;
   onLogout?: () => void;
   showBackButton?: boolean;
+  navigation?: any;
 }
 
 const CustomHeader: React.FC<CustomHeaderProps> = ({ 
   title, 
   userName = 'Usuário', 
   onLogout, 
-  showBackButton = false 
+  showBackButton = false,
+  navigation: propNavigation
 }) => {
-  const navigation = useNavigation<DrawerNavigationProp<any>>();
+  const hookNavigation = useNavigation<DrawerNavigationProp<any>>();
+  const navigation = propNavigation || hookNavigation;
   const { width } = Dimensions.get('window');
 
   const handleLogoPress = () => {
-    navigation.navigate('Home');
+    navigation.navigate('Dashboard');
   };
 
   const handleMenuPress = () => {
@@ -35,45 +38,70 @@ const CustomHeader: React.FC<CustomHeaderProps> = ({
   };
 
   const handleBackPress = () => {
-    navigation.goBack();
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    }
+  };
+
+  const handleLogoutPress = () => {
+    if (onLogout) {
+      onLogout();
+    } else {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+    }
   };
 
   return (
     <View style={styles.header}>
-      {/* Botão de menu/voltar à esquerda */}
-      <View style={styles.leftSection}>
+      <View style={styles.headerLeft}>
         {showBackButton ? (
           <TouchableOpacity 
             onPress={handleBackPress}
             style={styles.menuButton}
           >
-            <Text style={styles.menuIcon}>←</Text>
+            {/* Ícone de voltar */}
+            <Image 
+              source={require('../icons/back.png')}
+              style={styles.icon}
+              resizeMode="contain"
+            />
           </TouchableOpacity>
         ) : (
           <TouchableOpacity 
             onPress={handleMenuPress}
             style={styles.menuButton}
           >
-            <Text style={styles.menuIcon}>☰</Text>
+            {/* Ícone de menu hamburguer */}
+            <Image 
+              source={require('../icons/menu.png')}
+              style={styles.icon}
+              resizeMode="contain"
+            />
           </TouchableOpacity>
         )}
       </View>
       
-      {/* Logo centralizada */}
-      <View style={styles.centerSection}>
-        {title ? (
-          <Text style={styles.title}>{title}</Text>
-        ) : (
-          <TouchableOpacity onPress={handleLogoPress}>
-            <View style={styles.logoPlaceholder}>
-              <Text style={styles.logoText}>CONSTRULOG</Text>
-            </View>
-          </TouchableOpacity>
-        )}
+      <View style={styles.headerCenter}>
+        <TouchableOpacity onPress={handleLogoPress} style={styles.logoButton}>
+          <Image 
+            source={require('../../assets/images/logo.png')} 
+            style={[
+              styles.logo,
+              { 
+                width: width * 0.5,
+                maxWidth: 280,
+                minWidth: 180,
+              }
+            ]}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
       </View>
       
-      {/* Informações do usuário à direita */}
-      <View style={styles.rightSection}>
+      <View style={styles.headerRight}>
         <View style={styles.userInfoContainer}>
           <View style={styles.welcomeContainer}>
             <Text style={styles.welcomeText}>Bem-vindo(a),</Text>
@@ -81,16 +109,21 @@ const CustomHeader: React.FC<CustomHeaderProps> = ({
           </View>
           
           <Image
-            source={{ uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=200&q=80' }}
-            style={styles.profileImage}
+            source={require('../icons/user.png')}
+            style={styles.profileIcon}
+            resizeMode="contain"
           />
         </View>
         
-        {onLogout && (
-          <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
-            <Text style={styles.logoutText}>Sair</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogoutPress}>
+          {/* Ícone de logout */}
+          <Image 
+            source={require('../icons/logout.png')}
+            style={styles.logoutIcon}
+            resizeMode="contain"
+          />
+          <Text style={styles.logoutText}>Sair</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -108,16 +141,16 @@ const styles = StyleSheet.create({
     borderBottomColor: '#2a2a2a',
     minHeight: 100,
   },
-  leftSection: {
+  headerLeft: {
     flex: 1,
     alignItems: 'flex-start',
   },
-  centerSection: {
+  headerCenter: {
     flex: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rightSection: {
+  headerRight: {
     flex: 1,
     alignItems: 'flex-end',
   },
@@ -129,27 +162,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  menuIcon: {
-    fontSize: 20,
-    color: '#ededed',
+  icon: {
+    width: 20,
+    height: 20,
+    tintColor: '#ededed',
   },
-  title: {
-    fontSize: 18,
-    color: '#ededed',
-    fontWeight: '600',
-  },
-  logoPlaceholder: {
-    height: 35,
-    justifyContent: 'center',
+  logoButton: {
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    justifyContent: 'center',
   },
-  logoText: {
-    color: '#ff6600',
-    fontWeight: 'bold',
-    fontSize: 16,
+  logo: {
+    height: 40,
+    resizeMode: 'contain',
   },
   userInfoContainer: {
     flexDirection: 'row',
@@ -171,15 +195,23 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 2,
   },
-  profileImage: {
+  profileIcon: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    tintColor: '#ededed',
   },
   logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 8,
     backgroundColor: '#1a1a1a',
     borderRadius: 6,
+    gap: 6,
+  },
+  logoutIcon: {
+    width: 16,
+    height: 16,
+    tintColor: '#ff6600',
   },
   logoutText: {
     color: '#ff6600',

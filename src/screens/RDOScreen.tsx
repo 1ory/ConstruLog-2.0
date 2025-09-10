@@ -1,47 +1,62 @@
-// import React from 'react';
-// import {
-//   View,
-//   Text,
-//   StyleSheet,
-//   StatusBar,
-// } from 'react-native';
-// import CustomHeader from '../components/CustomHeader';
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+} from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import ThemedText from '../components/ThemedText';
 
-// const RDOScreen = ({ navigation }) => {
-//   const handleLogout = () => {
-//     navigation.reset({
-//       index: 0,
-//       routes: [{ name: 'Login' }],
-//     });
-//   };
+const RDOScreen = () => {
+  const navigation = useNavigation();
+  const route = useRoute();
+  const userName = route.params?.userName || 'Usuário';
 
-//   return (
-//     <View style={styles.container}>
-//       <StatusBar backgroundColor="#0a0a0a" barStyle="light-content" />
-      
-//       <CustomHeader title="RDO" userName="Usuário" onLogout={handleLogout} />
-      
-//       <View style={styles.content}>
-//         <Text style={styles.text}>Tela RDO - Em Desenvolvimento</Text>
-//       </View>
-//     </View>
-//   );
-// };
+  return (
+    <View style={styles.container}>
+      <View style={styles.content}>
+        <ThemedText style={styles.title} weight="bold">
+          RDO - Registro Diário de Obra
+        </ThemedText>
+        <ThemedText style={styles.text}>
+          Tela RDO - Em Desenvolvimento
+        </ThemedText>
+        <ThemedText style={styles.subtext}>
+          Em breve você poderá gerenciar seus Registros Diários de Obra aqui
+        </ThemedText>
+      </View>
+    </View>
+  );
+};
 
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: '#0a0a0a',
-//   },
-//   content: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-//   text: {
-//     color: '#ededed',
-//     fontSize: 18,
-//   },
-// });
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0a0a0a',
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  title: {
+    fontSize: 24,
+    color: '#ff6600',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  text: {
+    fontSize: 18,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  subtext: {
+    fontSize: 14,
+    color: '#a1a1aa',
+    textAlign: 'center',
+    marginTop: 10,
+  },
+});
 
-// export default RDOScreen;
+export default RDOScreen;

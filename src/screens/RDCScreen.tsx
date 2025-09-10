@@ -1,204 +1,225 @@
-// import React from 'react';
-// import {
-//   View,
-//   Text,
-//   StyleSheet,
-//   ScrollView,
-//   StatusBar,
-//   TouchableOpacity,
-//   Dimensions
-// } from 'react-native';
-// import { useNavigation } from '@react-navigation/native';
-// import CustomHeader from '../components/CustomHeader';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import ThemedText from '../components/ThemedText';
 
-// interface RDCScreenProps {
-//   onLogout?: () => void;
-//   userName?: string;
-// }
+const RDCScreen = () => {
+  const navigation = useNavigation();
+  const route = useRoute();
+  const userName = route.params?.userName || 'Usu�rio';
+  const [rdcs, setRDCs] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
 
-// const RDCScreen: React.FC<RDCScreenProps> = ({ onLogout, userName = 'Usuário' }) => {
-//   const navigation = useNavigation();
+  // Simula��o de dados enquanto implementamos o banco
+  const loadRDCs = async () => {
+    try {
+      setRefreshing(true);
+      // Dados mockados temporariamente
+      const mockData = [
+        {
+          id: 1,
+          data: new Date('2024-09-07'),
+          responsavel: 'Jo�o Silva',
+          area: 'El�trica',
+          efetivo: 'Pedro, Maria',
+          total_ocorrencias: 2
+        },
+        {
+          id: 2, 
+          data: new Date('2024-09-06'),
+          responsavel: 'Maria Santos',
+          area: 'Hidr�ulica',
+          efetivo: 'Carlos, Ana',
+          total_ocorrencias: 1
+        }
+      ];
+      setRDCs(mockData);
+    } catch (error) {
+      console.log('Erro ao carregar RDCs:', error);
+      Alert.alert('Erro', 'N�o foi poss�vel carregar os RDCs.');
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
-//   const handleLogout = () => {
-//     if (onLogout) {
-//       onLogout();
-//     } else {
-//       navigation.reset({
-//         index: 0,
-//         routes: [{ name: 'Login' }],
-//       });
-//     }
-//   };
+  useEffect(() => {
+    loadRDCs();
+  }, []);
 
-//   const handleNovoRDC = () => {
-//     navigation.navigate('NovoRDC');
-//   };
+  const handleDelete = (id: number) => {
+    Alert.alert(
+      'Confirmar exclus�o',
+      'Tem certeza que deseja excluir este RDC?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Simula��o de exclus�o
+              setRDCs(rdcs.filter(rdc => rdc.id !== id));
+              Alert.alert('Sucesso', 'RDC exclu�do com sucesso!');
+            } catch (error) {
+              console.log('Erro ao excluir RDC:', error);
+              Alert.alert('Erro', 'N�o foi poss�vel excluir o RDC.');
+            }
+          },
+        },
+      ]
+    );
+  };
 
-//   return (
-//     <View style={styles.container}>
-//       <StatusBar backgroundColor="#0a0a0a" barStyle="light-content" />
+  const renderItem = ({ item }: { item: any }) => (
+    <TouchableOpacity 
+      style={styles.rdcItem}
+      onPress={() => navigation.navigate('DetalhesRDC', { id: item.id })}
+    >
+      <View style={styles.rdcInfo}>
+        <ThemedText style={styles.rdcData} weight="bold">
+          {new Date(item.data).toLocaleDateString('pt-BR')}
+        </ThemedText>
+        <ThemedText style={styles.rdcResponsavel}>
+          {item.responsavel}
+        </ThemedText>
+        <ThemedText style={styles.rdcArea}>
+          {item.area}
+        </ThemedText>
+        <ThemedText style={styles.rdcEfetivo}>
+          Efetivo: {item.efetivo || 'Nenhum'}
+        </ThemedText>
+        <ThemedText style={styles.rdcOcorrencias}>
+          Ocorr�ncias: {item.total_ocorrencias || 0}
+        </ThemedText>
+      </View>
       
-//       <CustomHeader title="RDC - Registro Diário de Campo" userName={userName} onLogout={handleLogout} />
+      <View style={styles.rdcActions}>
+        <TouchableOpacity onPress={() => handleDelete(item.id)}>
+          <Ionicons name="trash" size={24} color="#ff6600" />
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
+  );
+
+  return (
+    <View style={styles.container}>
+      <FlatList
+        data={rdcs}
+        renderItem={renderItem}
+        keyExtractor={item => item.id.toString()}
+        refreshing={refreshing}
+        onRefresh={loadRDCs}
+        contentContainerStyle={styles.listContent}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Ionicons name="document-text" size={64} color="#6b7280" />
+            <ThemedText style={styles.emptyText} weight="bold">
+              Nenhum RDC salvo
+            </ThemedText>
+            <ThemedText style={styles.emptySubtext}>
+              Toque no bot�o + para criar um novo RDC
+            </ThemedText>
+          </View>
+        }
+      />
       
-//       <ScrollView contentContainerStyle={styles.content}>
-//         <Text style={styles.title}>Registro Diário de Campo</Text>
-        
-//         <View style={styles.section}>
-//           <Text style={styles.sectionTitle}>🏗️ Obra: Residencial Alphaville</Text>
-          
-//           <View style={styles.card}>
-//             <Text style={styles.cardTitle}>Informações da Obra</Text>
-//             <View style={styles.infoRow}>
-//               <Text style={styles.infoLabel}>Local:</Text>
-//               <Text style={styles.infoValue}>Rua das Construções, 123</Text>
-//             </View>
-//             <View style={styles.infoRow}>
-//               <Text style={styles.infoLabel}>Engenheiro Responsável:</Text>
-//               <Text style={styles.infoValue}>Carlos Silva</Text>
-//             </View>
-//             <View style={styles.infoRow}>
-//               <Text style={styles.infoLabel}>Status:</Text>
-//               <Text style={[styles.infoValue, styles.statusActive]}>Em Andamento</Text>
-//             </View>
-//           </View>
-          
-//           <View style={styles.card}>
-//             <Text style={styles.cardTitle}>Equipe no Local</Text>
-//             <View style={styles.teamItem}>
-//               <Text style={styles.teamText}>Pedreiros: 8</Text>
-//             </View>
-//             <View style={styles.teamItem}>
-//               <Text style={styles.teamText}>Eletricistas: 3</Text>
-//             </View>
-//             <View style={styles.teamItem}>
-//               <Text style={styles.teamText}>Encanadores: 2</Text>
-//             </View>
-//             <View style={styles.teamItem}>
-//               <Text style={styles.teamText}>Ajudantes: 5</Text>
-//             </View>
-//           </View>
-          
-//           <View style={styles.card}>
-//             <Text style={styles.cardTitle}>Condições do Tempo</Text>
-//             <View style={styles.weatherItem}>
-//               <Text style={styles.weatherText}>🌤️ Parcialmente Nublado</Text>
-//             </View>
-//             <View style={styles.weatherItem}>
-//               <Text style={styles.weatherText}>🌡️ Temperatura: 28°C</Text>
-//             </View>
-//             <View style={styles.weatherItem}>
-//               <Text style={styles.weatherText}>💧 Umidade: 65%</Text>
-//             </View>
-//           </View>
-          
-//           <View style={styles.card}>
-//             <Text style={styles.cardTitle}>Ocorrências</Text>
-//             <Text style={styles.occurrenceText}>
-//               • Atraso na entrega de material de acabamento
-//               {'\n'}• Necessidade de reforço na estrutura do 2º pavimento
-//               {'\n'}• Equipe de pintura remarcada para próxima semana
-//             </Text>
-//           </View>
-//         </View>
-        
-//         <TouchableOpacity style={styles.addButton} onPress={handleNovoRDC}>
-//           <Text style={styles.addButtonText}>+ Novo Registro RDC</Text>
-//         </TouchableOpacity>
-//       </ScrollView>
-//     </View>
-//   );
-// };
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate('NovoRDC', { userName })}
+      >
+        <Ionicons name="add" size={24} color="white" />
+      </TouchableOpacity>
+    </View>
+  );
+};
 
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: '#0a0a0a',
-//   },
-//   content: {
-//     padding: 20,
-//     paddingBottom: 40,
-//   },
-//   title: {
-//     fontSize: 24,
-//     color: '#ededed',
-//     fontWeight: 'bold',
-//     marginBottom: 25,
-//     textAlign: 'center',
-//   },
-//   section: {
-//     marginBottom: 25,
-//   },
-//   sectionTitle: {
-//     fontSize: 18,
-//     color: '#ff6600',
-//     fontWeight: '600',
-//     marginBottom: 15,
-//   },
-//   card: {
-//     backgroundColor: '#1a1a1a',
-//     borderRadius: 12,
-//     padding: 20,
-//     marginBottom: 20,
-//     borderWidth: 1,
-//     borderColor: '#2a2a2a',
-//   },
-//   cardTitle: {
-//     fontSize: 16,
-//     color: '#ff6600',
-//     fontWeight: '600',
-//     marginBottom: 15,
-//   },
-//   infoRow: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     marginBottom: 10,
-//   },
-//   infoLabel: {
-//     fontSize: 14,
-//     color: '#a1a1aa',
-//     fontWeight: '500',
-//   },
-//   infoValue: {
-//     fontSize: 14,
-//     color: '#ededed',
-//   },
-//   statusActive: {
-//     color: '#4ade80',
-//     fontWeight: '600',
-//   },
-//   teamItem: {
-//     marginBottom: 8,
-//     paddingLeft: 10,
-//   },
-//   teamText: {
-//     fontSize: 14,
-//     color: '#ededed',
-//   },
-//   weatherItem: {
-//     marginBottom: 8,
-//     paddingLeft: 10,
-//   },
-//   weatherText: {
-//     fontSize: 14,
-//     color: '#ededed',
-//   },
-//   occurrenceText: {
-//     fontSize: 14,
-//     color: '#a1a1aa',
-//     lineHeight: 22,
-//   },
-//   addButton: {
-//     backgroundColor: '#ff6600',
-//     padding: 18,
-//     borderRadius: 12,
-//     alignItems: 'center',
-//     marginTop: 20,
-//   },
-//   addButtonText: {
-//     color: '#ffffff',
-//     fontSize: 16,
-//     fontWeight: '600',
-//   },
-// });
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0a0a0a',
+  },
+  listContent: {
+    padding: 16,
+    flexGrow: 1,
+  },
+  rdcItem: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 10,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+  },
+  rdcInfo: {
+    flex: 1,
+  },
+  rdcData: {
+    color: '#ff6600',
+    fontSize: 16,
+    marginBottom: 4,
+  },
+  rdcResponsavel: {
+    fontSize: 16,
+    marginBottom: 2,
+  },
+  rdcArea: {
+    color: '#a1a1aa',
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  rdcEfetivo: {
+    color: '#a1a1aa',
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  rdcOcorrencias: {
+    color: '#a1a1aa',
+    fontSize: 12,
+  },
+  rdcActions: {
+    marginLeft: 12,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 64,
+  },
+  emptyText: {
+    fontSize: 18,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    color: '#a1a1aa',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#ff6600',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+});
 
-// export default RDCScreen;
+export default RDCScreen;
